@@ -1,0 +1,26 @@
+{
+  "name": "2XWIN",
+  "short_name": "2XWIN",
+  "description": "الشحن الفوري والآمن لحسابك",
+  "start_url": "./",
+  "display": "fullscreen",
+  "background_color": "#00AEEF",
+  "theme_color": "#00AEEF",
+  "orientation": "portrait",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

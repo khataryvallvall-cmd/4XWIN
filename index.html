@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="appHtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2XWIN - شحن الحسابات</title>
+    
+    <!-- إعدادات PWA وتوافق الهواتف -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="2XWIN">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="theme-color" content="#00AEEF" id="themeColorMeta">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #00AEEF;
+            --primary-dark: #008ccc;
+            --bg-app: #f2f5f9;
+            --white: #ffffff;
+            --text-main: #1d1d1f;
+            --text-muted: #86868b;
+            --border-light: #e5e5ea;
+            --success: #34c759;
+            --error: #ff3b30;
+            --receipt-bg: #fdfdfd;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none; 
+            -moz-user-select: none;    
+            -ms-user-select: none;     
+            user-select: none;         
+            -webkit-touch-callout: none; 
+            touch-action: manipulation;
+        }
+
+        html, body {
+            /* التعديل الأهم: منع السحب للتحديث (Pull-to-refresh) */
+            overscroll-behavior-y: none;
+            background-color: var(--primary); /* لون الخلفية الأساسي لمنع الوميض الأبيض */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+        }
+
+        .app-wrapper {
+            background-color: var(--white);
+            width: 100%;
+            max-width: 100%;
+            min-height: 100vh;
+            border-radius: 0;
+            box-shadow: none;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* =========================================
+           تصميم شاشة البداية (Splash Screen)
+           ========================================= */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000000;
+            z-index: 999999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        #splash-screen img {
+            width: 60%;
+            max-width: 300px;
+        }
+
+        #splash-screen.fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        /* --- الهيدر واللغات --- */
+        .header {
+            background: linear-gradient(135deg, var(--primary), #00d2ff);
+            color: var(--white);
+            padding: 20px 20px 25px; 
+            text-align: center;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            box-shadow: 0 10px 20px rgba(0, 174, 239, 0.2);
+            position: relative;
+            z-index: 10;
+        }
+
+        .lang-switcher { position: absolute; top: 15px; inset-inline-end: 15px; }
+        .help-switcher { position: absolute; top: 15px; inset-inline-start: 15px; z-index: 20; }
+
+        .lang-btn {
+            background: rgba(255, 255, 255, 0.2); border: none; color: white;
+            font-size: 18px; width: 36px; height: 36px; border-radius: 50%;
+            cursor: pointer; backdrop-filter: blur(5px); transition: all 0.3s;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .lang-btn:hover { background: rgba(255, 255, 255, 0.4); transform: scale(1.05); }
+
+        .lang-menu {
+            position: absolute; top: 60px; inset-inline-end: 0; background: var(--white);
+            border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            overflow: hidden; display: none; flex-direction: column; width: 120px; z-index: 20;
+        }
+
+        .lang-menu.show { display: flex; }
+
+        .lang-menu button {
+            padding: 10px 15px; border: none; background: none; text-align: start;
+            font-family: 'Tajawal', sans-serif; font-weight: 700; color: var(--text-main);
+            cursor: pointer; transition: background 0.2s; display: flex; align-items: center; gap: 8px;
+        }
+
+        .lang-menu button:hover { background: var(--bg-app); color: var(--primary); }
+
+        .header h1 { font-size: 24px; font-weight: 800; letter-spacing: 1px; margin-bottom: 2px; }
+        .header p { font-size: 13px; opacity: 0.9; font-weight: 500; }
+
+        .content { padding: 25px 20px; margin-top: -15px; position: relative; z-index: 3; }
+
+        .input-group { margin-bottom: 20px; background: var(--white); border-radius: 20px; }
+        .input-label { font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .input-label i { color: var(--primary); font-size: 16px; }
+
+        .row { display: flex; gap: 12px; }
+        .control-wrapper { flex: 1; position: relative; display: flex; flex-direction: column; }
+
+        /* --- الحقول --- */
+        input, textarea {
+            -webkit-user-select: auto !important; 
+            -moz-user-select: auto !important;    
+            -ms-user-select: auto !important;     
+            user-select: auto !important;
+            -webkit-touch-callout: default !important;
+            
+            width: 100%; padding: 16px; background-color: #f9f9fb; border: 1.5px solid var(--border-light);
+            border-radius: 16px; font-size: 15px; color: var(--text-main); font-weight: 700;
+            outline: none; transition: all 0.3s ease;
+        }
+        input:focus { background-color: var(--white); border-color: var(--primary); box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.15); }
+        input.error-border { border-color: var(--error); background-color: rgba(255, 59, 48, 0.05); }
+
+        /* --- أزرار اختيار المنصة (الصور) --- */
+        .platform-selector {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+        
+        .platform-btn {
+            flex: 1;
+            height: 60px; 
+            border-radius: 16px;
+            border: 2px solid var(--border-light);
+            background-color: #f9f9fb;
+            cursor: pointer;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .platform-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; 
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            -webkit-touch-callout: none;
+            -webkit-user-drag: none;
+            user-select: none;
+        }
+
+        .platform-btn.selected {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.15);
+            background-color: var(--white);
+        }
+
+        .platform-selector.has-selection .platform-btn:not(.selected) img {
+            opacity: 0.5;
+        }
+        
+        .platform-selector.error-border .platform-btn {
+            border-color: var(--error);
+        }
+
+        /* --- القوائم العصرية --- */
+        .custom-select-wrapper { position: relative; width: 100%; }
+        .custom-select-trigger {
+            width: 100%; padding: 16px; background-color: #f9f9fb; border: 1.5px solid var(--border-light);
+            border-radius: 16px; font-size: 15px; color: var(--text-main); font-weight: 700;
+            cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s ease;
+        }
+        .custom-select-trigger i { color: var(--primary); transition: transform 0.3s ease; }
+        .custom-select-trigger.open { border-color: var(--primary); background-color: var(--white); box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.15); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+        .custom-select-trigger.open i { transform: rotate(180deg); }
+        .custom-select-trigger.error-border { border-color: var(--error); background-color: rgba(255, 59, 48, 0.05); }
+
+        .custom-options {
+            position: absolute; top: 100%; left: 0; right: 0; background-color: var(--white);
+            border: 1.5px solid var(--primary); border-top: none; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 174, 239, 0.2); z-index: 99; max-height: 200px; overflow-y: auto;
+            display: none; flex-direction: column; opacity: 0; transform: translateY(-10px); transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .custom-options.open { display: flex; opacity: 1; transform: translateY(0); }
+        .custom-option {
+            padding: 14px 16px; font-size: 15px; font-weight: 600; color: var(--text-main);
+            cursor: pointer; transition: background 0.2s, color 0.2s; border-bottom: 1px solid var(--border-light); display: flex; align-items: center;
+        }
+        .custom-option:last-child { border-bottom: none; }
+        .custom-option:hover, .custom-option.selected { background-color: rgba(0, 174, 239, 0.08); color: var(--primary); }
+
+        /* --- شبكة المربعات الجديدة --- */
+        .payment-grid-options {
+            position: absolute; top: 100%; left: 0; right: 0; background-color: var(--white);
+            border: 1.5px solid var(--primary); border-top: none; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 174, 239, 0.2); 
+            z-index: 999; 
+            max-height: 280px; 
+            overflow-y: auto;
+            display: none; 
+            grid-template-columns: repeat(4, 1fr); 
+            justify-items: center; 
+            gap: 10px; 
+            padding: 20px 10px 25px 10px; 
+            opacity: 0; transform: translateY(-10px); transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .payment-grid-options.open { display: grid; opacity: 1; transform: translateY(0); }
+        
+        .new-square-item {
+            width: 55px; 
+            height: 55px; 
+            border-radius: 14px; 
+            border: 2px solid var(--border-light);
+            background-color: #ffffff; 
+            cursor: pointer; 
+            overflow: hidden;
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            transition: all 0.3s ease;
+        }
+        .new-square-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; 
+            padding: 4px; 
+            pointer-events: none;
+            -webkit-touch-callout: none;
+            -webkit-user-drag: none;
+            user-select: none;
+        }
+        .new-square-item:hover, .new-square-item.selected { 
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 4px rgba(0, 174, 239, 0.15); 
+        }
+        
+        .trigger-content { display: flex; align-items: center; gap: 10px; }
+        .trigger-img-preview { height: 30px; width: 50px; border-radius: 6px; object-fit: contain; border: 1px solid var(--border-light); background-color: #fff; padding: 2px;}
+
+        .error-message { color: var(--error); font-size: 11px; font-weight: 700; margin-top: 5px; display: none; }
+        .error-message.show { display: block; }
+
+        /* --- رسائل التنبيه والخطأ --- */
+        .payment-alert-row {
+            margin-top: 8px; padding: 0 8px;
+            color: var(--error); font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 5px; justify-content: flex-start;
+        }
+
+        /* --- مربع رقم الشركة (شريط) --- */
+        .payment-info {
+            margin-top: 15px;
+            display: none; animation: slideDown 0.3s ease forwards;
+        }
+        .payment-info.active { display: block; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .payment-details-row { 
+            background-color: #f9f9fb; border: 1.5px solid var(--border-light); border-radius: 16px;
+            height: 58px; padding: 0 16px; display: flex; justify-content: space-between; align-items: center; gap: 10px;
+            transition: all 0.3s ease;
+        }
+        .payment-details-row:hover { border-color: var(--primary); background-color: rgba(0, 174, 239, 0.02); }
+
+        .payment-text { text-align: start; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .payment-text p { color: var(--text-muted); font-size: 11px; margin: 0 0 2px 0; font-weight: 600; }
+        .payment-text h3 { font-size: 17px; color: var(--text-main); letter-spacing: 1.5px; font-weight: 800; margin: 0; }
+
+        .copy-btn {
+            background: transparent; border: none; width: 36px; height: 36px;
+            border-radius: 10px; color: var(--primary); cursor: pointer; transition: all 0.2s;
+            display: flex; justify-content: center; align-items: center; font-size: 18px;
+        }
+        .copy-btn:hover { background: rgba(0, 174, 239, 0.1); transform: scale(1.05); }
+
+        /* --- منطقة رفع الصورة --- */
+        .upload-area {
+            border: 1.5px solid var(--border-light); 
+            border-radius: 16px; 
+            padding: 0 16px; 
+            background-color: #f9f9fb; 
+            transition: all 0.3s ease; 
+            cursor: pointer;
+            height: 58px; 
+            display: flex; 
+            flex-direction: row; 
+            justify-content: center; 
+            align-items: center; 
+            gap: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        .upload-area:hover { border-color: var(--primary); background-color: rgba(0, 174, 239, 0.02); }
+        .upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 10; }
+        
+        .upload-content { 
+            display: flex; 
+            flex-direction: row; 
+            align-items: center; 
+            gap: 10px; 
+            width: 100%;
+            justify-content: center;
+        }
+        .upload-icon { font-size: 20px; color: var(--primary); }
+        .upload-text { font-size: 14px; color: var(--text-muted); font-weight: 700; }
+
+        #imagePreview {
+            display: none; height: 40px; width: auto; max-width: 100%; border-radius: 8px; object-fit: contain; z-index: 5;
+        }
+        .upload-area.has-image .upload-content { display: none; }
+        .upload-area.has-image #imagePreview { display: block; }
+
+        /* --- زر الإرسال --- */
+        .submit-btn {
+            width: 100%; background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: var(--white); border: none; padding: 18px; border-radius: 16px; font-size: 18px;
+            font-weight: 700; cursor: pointer; box-shadow: 0 10px 20px rgba(0, 174, 239, 0.3);
+            transition: all 0.3s ease; display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px;
+        }
+        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 15px 25px rgba(0, 174, 239, 0.4); }
+        html[dir="ltr"] .fa-paper-plane { transform: scaleX(-1); }
+
+        /* شاشة النجاح والإيصال الرقمي */
+        .success-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--white);
+            z-index: 20; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 20px; text-align: center; opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+            overflow-y: auto;
+        }
+        .success-modal.show { opacity: 1; pointer-events: all; }
+
+        .loading-state { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .spinner {
+            width: 50px; height: 50px; border: 5px solid rgba(0, 174, 239, 0.2);
+            border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { font-size: 16px; font-weight: 700; color: var(--text-main); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .receipt-state { display: none; flex-direction: column; align-items: center; width: 100%; }
+        .success-icon {
+            width: 60px; height: 60px; background: var(--success); color: var(--white); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; font-size: 30px; margin-bottom: 15px;
+            box-shadow: 0 10px 20px rgba(52, 199, 89, 0.3);
+        }
+        .success-title { color: var(--text-main); font-size: 20px; font-weight: 800; margin-bottom: 5px; }
+        .success-desc { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
+
+        .receipt-card {
+            background: var(--receipt-bg); width: 100%; max-width: 320px; border-radius: 12px;
+            padding: 20px; text-align: start; box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+            border: 1px dashed #ccc; position: relative;
+        }
+        .receipt-card::before, .receipt-card::after {
+            content: ''; position: absolute; top: 50%; width: 20px; height: 20px;
+            background: var(--white); border-radius: 50%; transform: translateY(-50%);
+        }
+        .receipt-card::before { left: -10px; border-right: 1px dashed #ccc; }
+        .receipt-card::after { right: -10px; border-left: 1px dashed #ccc; }
+
+        .receipt-header { text-align: center; border-bottom: 1px dashed #ddd; padding-bottom: 15px; margin-bottom: 15px; }
+        .receipt-header h3 { color: var(--primary); font-size: 18px; font-weight: 800; }
+        
+        .r-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 14px; }
+        .r-label { color: var(--text-muted); font-weight: 500; }
+        .r-value { color: var(--text-main); font-weight: 700; font-family: monospace, 'Tajawal'; font-size: 15px; }
+        .r-value.amount { color: var(--success); font-size: 16px; font-weight: 800; }
+
+        .new-transfer-btn {
+            margin-top: 20px; background: transparent; border: 2px solid var(--primary);
+            color: var(--primary); padding: 10px 25px; border-radius: 12px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .new-transfer-btn:hover { background: var(--primary); color: var(--white); }
+
+        /* --- نافذة المساعدة والدعم --- */
+        .help-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-app);
+            z-index: 30; display: flex; flex-direction: column; 
+            opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+            overflow-y: auto;
+        }
+        .help-modal.show { opacity: 1; pointer-events: all; }
+        
+        .help-content-area {
+            padding: 25px 20px; text-align: start; flex: 1; display: flex; flex-direction: column;
+        }
+
+        .hidden-element { display: none !important; }
+
+        .support-panel {
+            background: transparent;
+            display: none; flex-direction: column; gap: 10px;
+            animation: slideDown 0.3s ease forwards;
+        }
+        .support-panel.show { display: flex; }
+
+        .contact-item {
+            display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+            background: var(--white); border: 1.5px solid var(--border-light);
+            border-radius: 14px; text-decoration: none; color: var(--text-main);
+            font-weight: 700; font-size: 15px; transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        }
+        .contact-item:hover { border-color: var(--primary); transform: translateY(-2px); }
+        .contact-item i { font-size: 22px; width: 25px; text-align: center; }
+        
+        .color-phone { color: #34c759; }
+        .color-wa { color: #25D366; }
+        .color-fb { color: #1877F2; }
+        .color-tg { color: #0088cc; }
+        .color-tk { color: #000000; }
+
+        .help-text-box {
+            background: var(--white); padding: 20px; border-radius: 16px;
+            border: 1.5px solid var(--border-light);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.02); color: var(--text-main);
+            font-size: 14px; line-height: 1.8; font-weight: 600; text-align: start; margin-bottom: 20px;
+        }
+
+        /* --- شريط الألوان (الثيمات) --- */
+        .theme-picker-container {
+            margin-top: auto; 
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            border-top: 1px dashed var(--border-light);
+        }
+        .theme-picker-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-align: center;
+        }
+        .theme-picker {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 10px; 
+            flex-wrap: nowrap; 
+            width: 100%;
+        }
+        .theme-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .theme-btn {
+            width: 55px; 
+            height: 70px; 
+            border-radius: 14px; 
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            background-color: #1c1c1e; 
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 3.333l1.875 5.766 6.066.883-4.39 4.39.883 6.066L18.667 18.5 12.9 20.375l.884-6.066-4.39-4.39 6.066-.883L17.333 3.333zm16.667 16.667l1.25 3.844 4.044.589-2.927 2.927.589 4.044L35.667 30 31.823 31.25l.589-4.044-2.927-2.927 4.044-.589L35 20zm-20 13.333l.938 2.883 3.033.442-2.195 2.195.442 3.033L15.333 40 12.45 40.938l.442-3.033-2.195-2.195 3.033-.442L14.667 33.333z' fill='%23ffffff' fill-opacity='0.06' fill-rule='evenodd'/%3E%3C/svg%3E");
+        }
+        
+        .theme-btn:hover { transform: translateY(-3px); }
+        .theme-btn.active { border: 2px solid var(--primary); transform: scale(1.05); }
+
+        .theme-btn.btn-original { background-color: #00AEEF; background-image: none; }
+
+        .theme-icon-box {
+            width: 28px;
+            height: 28px;
+            background: var(--white);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            font-size: 15px;
+        }
+
+        .btn-original .theme-icon-box { color: #00AEEF; }
+        .btn-purple .theme-icon-box { color: #9b51e0; }
+        .btn-green .theme-icon-box { color: #27ae60; }
+        .btn-orange .theme-icon-box { color: #f2994a; }
+        .btn-pro .theme-icon-box { color: #34495e; }
+
+        .theme-emoji { font-size: 16px; line-height: 1; z-index: 2; }
+        
+        .theme-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            font-family: 'Tajawal', sans-serif;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- ================= شاشة البداية (Splash Screen) ================= -->
+    <div id="splash-screen">
+        <img src="https://i.ibb.co/G4gH8MJb/upscalemedia-transformed-2-1024x1024-removebg-preview.png" alt="2XWIN Logo">
+    </div>
+
+    <div class="app-wrapper">
+        
+        <div class="header">
+            <div class="help-switcher" id="openHelpWrapper" style="display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer;">
+                <button class="lang-btn" type="button" style="pointer-events: none;">
+                    <i class="fa-solid fa-table-cells-large"></i>
+                </button>
+                <span id="t-menuText" style="color: white; font-size: 11px; font-weight: 700;">القائمة</span>
+            </div>
+
+            <div class="lang-switcher" id="langWrapper" style="display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer;">
+                <button class="lang-btn" type="button" style="pointer-events: none;">
+                    <i class="fa-solid fa-globe"></i>
+                </button>
+                <span id="t-langText" style="color: white; font-size: 11px; font-weight: 700;">اللغة</span>
+                <div class="lang-menu" id="langMenu" style="top: 60px;">
+                    <button type="button" onclick="changeLanguage('ar', event)">العربية</button>
+                    <button type="button" onclick="changeLanguage('en', event)">English</button>
+                    <button type="button" onclick="changeLanguage('fr', event)">Français</button>
+                </div>
+            </div>
+            <h1>2XWIN</h1>
+            <p id="t-subtitle">الشحن الفوري والآمن لحسابك</p>
+        </div>
+
+        <div class="content">
+            <form id="premiumForm" novalidate>
+                
+                <div class="input-group">
+                    <label class="input-label"><i class="fa-solid fa-gamepad"></i> <span id="t-platLabel">بيانات المنصة</span></label>
+                    <div class="row">
+                        
+                        <div class="control-wrapper">
+                            <div class="platform-selector" id="platformSelector">
+                                <div class="platform-btn" data-value="1xBet" onclick="selectPlatform(this)">
+                                    <img src="https://i.ibb.co/bRK8yW37/1-Bet-id-L4-NWQv-FL-2-1.jpg" alt="1xBet">
+                                </div>
+                                <div class="platform-btn" data-value="Melbet" onclick="selectPlatform(this)">
+                                    <img src="https://i.ibb.co/8Lt2x1NJ/Mel-Bet-Partners-Affiliates-idf-Fu4p-Cd-W-1.jpg" alt="Melbet">
+                                </div>
+                            </div>
+                            <input type="hidden" id="platform" value="" required>
+                        </div>
+
+                        <div class="control-wrapper">
+                            <input type="text" inputmode="numeric" id="accountId" placeholder="رقم حسابك (ID)" required>
+                            <span class="error-message" id="error-accountId">رقم الحساب غير صحيح</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label"><i class="fa-solid fa-wallet"></i> <span id="t-amountLabel">تفاصيل الشحن</span></label>
+                    <div class="row">
+                        <div class="control-wrapper">
+                            <div class="custom-select-wrapper" id="custom-currency">
+                                <div class="custom-select-trigger" id="trigger-currency">
+                                    <span class="trigger-text" id="t-currOption">العملة</span>
+                                    <i class="fa-solid fa-chevron-down"></i>
+                                </div>
+                                <div class="custom-options">
+                                    <div class="custom-option" data-value="mru" id="t-currMRU">أوقية (MRU)</div>
+                                    <div class="custom-option" data-value="usd" id="t-currUSD">دولار (USD)</div>
+                                </div>
+                                <input type="hidden" id="currency" value="" required>
+                            </div>
+                        </div>
+                        <div class="control-wrapper">
+                            <input type="text" inputmode="numeric" id="amount" placeholder="المبلغ" required>
+                            <span class="error-message" id="error-amount">أدخل مبلغاً صحيحاً</span>
+                            <div class="payment-alert-row" id="min-amount-alert" style="display: none; margin-top: 5px; padding: 0;">
+                                <i class="fa-solid fa-circle-exclamation"></i> <span id="t-minAmountText">الحد الادنى للايداع: 30 أوقية</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label"><i class="fa-solid fa-building-columns"></i> <span id="t-payLabel">طريقة الدفع</span></label>
+                    
+                    <div class="custom-select-wrapper" id="custom-payment-wrapper">
+                        <div class="custom-select-trigger" id="trigger-payment">
+                            <div class="trigger-content" id="t-payOptionContent">
+                                <span class="trigger-text" id="t-payOption">أختر طريقة الدفع</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </div>
+                        
+                        <div class="payment-grid-options" id="payment-options-container">
+                            <div class="new-square-item" data-value="amanty">
+                                <img src="https://i.ibb.co/YFD0m685/images.jpg" alt="أمانتي">
+                            </div>
+                            <div class="new-square-item" data-value="gazapay">
+                                <img src="https://i.ibb.co/fz6yqMn5/unnamed.jpg" alt="غزة باي">
+                            </div>
+                            <div class="new-square-item" data-value="bankily">
+                                <img src="https://i.ibb.co/SD4HkKcM/unnamed-removebg-preview-2.png" alt="بنكيلي">
+                            </div>
+                            <div class="new-square-item" data-value="bimbank">
+                                <img src="https://i.ibb.co/6Kp44wP/unnamed-removebg-preview-1.png" alt="بيم بنك">
+                            </div>
+                            <div class="new-square-item" data-value="masrivi">
+                                <img src="https://i.ibb.co/Kz7GXWph/images-removebg-preview.png" alt="مصرفي">
+                            </div>
+                            <div class="new-square-item" data-value="sadad">
+                                <img src="https://i.ibb.co/tTBH6Lwd/unnamed-2-removebg-preview.png" alt="سداد">
+                            </div>
+                            <div class="new-square-item" data-value="click">
+                                <img src="https://i.ibb.co/mVwbbgHK/unnamed-1-removebg-preview.png" alt="كليك">
+                            </div>
+                            <div class="new-square-item" data-value="moov">
+                                <img src="https://i.ibb.co/FqbpHVFR/logo-fr-ar-1024x730.png" alt="موڤ موني">
+                            </div>
+                        </div>
+                        
+                        <input type="hidden" id="paymentMethod" value="" required>
+                        <input type="hidden" id="paymentMethodName" value="">
+                    </div>
+
+                    <div class="control-wrapper" style="margin-top: 15px;">
+                        <input type="text" inputmode="numeric" id="senderName" placeholder="رقم المرسل كما في التطبيق" required>
+                        <span class="error-message" id="error-senderName">يرجى إدخال رقم المرسل</span>
+                    </div>
+
+                    <div class="payment-info" id="paymentInfoBox">
+                        <div class="payment-details-row">
+                            <div class="payment-text">
+                                <p id="t-transferText">يرجى تحويل المبلغ لحساب شركتنا:</p>
+                                <h3 id="displayNumber">30585344</h3>
+                            </div>
+                            <button type="button" class="copy-btn" id="copyBtn" title="نسخ الرقم">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="payment-alert-row" id="t-screenshotAlert">
+                            <i class="fa-solid fa-circle-exclamation"></i> التقط صورة للشاشة بعد التحويل
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label"><i class="fa-solid fa-file-invoice-dollar"></i> <span id="t-uploadLabel">إثبات الدفع</span></label>
+                    <div class="upload-area" id="uploadBox">
+                        <input type="file" id="receiptFile" accept="image/*" required>
+                        <div class="upload-content" id="uploadContent">
+                            <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                            <div class="upload-text" id="t-uploadText">اضغط هنا لرفع صورة الإيصال</div>
+                        </div>
+                        <img id="imagePreview" src="" alt="Receipt Image">
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">
+                    <span id="t-submitBtn">تأكيد وإرسال الطلب</span>
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+
+            </form>
+        </div>
+
+        <div class="success-modal" id="successModal">
+            <div class="loading-state" id="loadingState">
+                <div class="spinner"></div>
+                <p class="loading-text" id="t-processing">جاري معالجة الطلب وإصدار الإيصال...</p>
+            </div>
+            <div class="receipt-state" id="receiptState">
+                <div class="success-icon"><i class="fa-solid fa-check"></i></div>
+                <h2 class="success-title" id="t-successTitle">عملية ناجحة!</h2>
+                <div class="receipt-card">
+                    <div class="receipt-header"><h3>2XWIN Receipt</h3></div>
+                    <div class="r-row"><span class="r-label" id="t-r-trans">رقم المعاملة:</span> <span class="r-value" id="r-transVal"></span></div>
+                    <div class="r-row"><span class="r-label" id="t-r-plat">المنصة:</span> <span class="r-value" id="r-platVal"></span></div>
+                    <div class="r-row"><span class="r-label" id="t-r-acc">رقم الحساب:</span> <span class="r-value" id="r-accVal"></span></div>
+                    <div class="r-row"><span class="r-label" id="t-r-amt">مبلغ الشحن:</span> <span class="r-value amount" id="r-amtVal"></span></div>
+                    <div class="r-row"><span class="r-label" id="t-r-app">طريقة الدفع:</span> <span class="r-value" id="r-appVal"></span></div>
+                    <div class="r-row"><span class="r-label" id="t-r-name">اسم المرسل:</span> <span class="r-value" id="r-nameVal"></span></div>
+                    <div class="r-row" style="margin-top: 15px; border-top: 1px dashed #eee; padding-top: 10px;">
+                        <span class="r-label" id="t-r-date">التاريخ والوقت:</span> <span class="r-value" id="r-dateVal"></span>
+                    </div>
+                </div>
+                <button class="new-transfer-btn" id="resetBtn" type="button"><span id="t-newTransfer">إجراء شحن جديد</span></button>
+            </div>
+        </div>
+
+        <!-- نافذة المساعدة -->
+        <div class="help-modal" id="helpModal">
+            <div class="header" style="border-bottom-left-radius: 30px; border-bottom-right-radius: 30px;">
+                
+                <div style="position: absolute; top: 15px; inset-inline-start: 15px; z-index: 20;">
+                    <button class="lang-btn" id="closeHelpBtn" type="button">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div style="position: absolute; top: 15px; inset-inline-end: 15px; z-index: 20;">
+                    <button id="supportActionBtn" type="button" style="background: transparent; border: none; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; gap: 3px;">
+                        <i class="fa-solid fa-headset" style="font-size: 20px;"></i>
+                        <span id="t-supportText2" style="font-size: 11px; font-weight: 700;">الدعم</span>
+                    </button>
+                </div>
+
+                <h1 id="t-helpTitle">المساعدة والدعم</h1>
+                <p id="t-helpSubtitle">تواصل معنا لأي استفسار</p>
+            </div>
+            
+            <div class="help-content-area" id="faqGroupContainer" style="display: flex; flex-direction: column; flex: 1;">
+
+                <div style="flex: 1;"></div>
+
+                <div class="theme-picker-container" id="themePickerContainer" style="margin-top: auto;">
+                    <div class="theme-picker-title" id="t-themeTitle">تخصيص لون التطبيق</div>
+                    <div class="theme-picker">
+                        
+                        <div class="theme-item">
+                            <button type="button" class="theme-btn btn-original active" data-color="#00AEEF" data-dark="#008ccc" style="display: block; padding: 0; background-color: #000; border: 2px solid transparent;">
+                                <img src="https://i.ibb.co/1fwPnLtH/upscalemedia-transformed-2-1024x1024-1.jpg" alt="Original Theme" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">
+                            </button>
+                            <span class="theme-label" id="t-themeDefault">أصلي</span>
+                        </div>
+                        
+                        <div class="theme-item">
+                            <button type="button" class="theme-btn btn-purple" data-color="#9b51e0" data-dark="#813bbd">
+                                <div class="theme-icon-box"><i class="fa-solid fa-gem"></i></div>
+                                <span class="theme-emoji">🔮</span>
+                            </button>
+                            <span class="theme-label t-themePremium">مميز</span>
+                        </div>
+
+                        <div class="theme-item">
+                            <button type="button" class="theme-btn btn-green" data-color="#27ae60" data-dark="#1e8449">
+                                <div class="theme-icon-box"><i class="fa-solid fa-leaf"></i></div>
+                                <span class="theme-emoji">🍀</span>
+                            </button>
+                            <span class="theme-label t-themePremium">مميز</span>
+                        </div>
+
+                        <div class="theme-item">
+                            <button type="button" class="theme-btn btn-orange" data-color="#f2994a" data-dark="#d6813b">
+                                <div class="theme-icon-box"><i class="fa-solid fa-fire"></i></div>
+                                <span class="theme-emoji">🔥</span>
+                            </button>
+                            <span class="theme-label t-themePremium">مميز</span>
+                        </div>
+
+                        <div class="theme-item">
+                            <button type="button" class="theme-btn btn-pro" data-color="#34495e" data-dark="#2c3e50">
+                                <div class="theme-icon-box"><i class="fa-solid fa-crown"></i></div>
+                                <span class="theme-emoji">👑</span>
+                            </button>
+                            <span class="theme-label" id="t-themePro">برو</span>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="help-content-area" style="padding-top: 25px;">
+                <div class="support-panel" id="supportPanel">
+                    <a href="tel:30585344" class="contact-item">
+                        <i class="fa-solid fa-phone color-phone"></i>
+                        <span>30585344</span>
+                    </a>
+                    <a href="https://wa.me/22230585344" class="contact-item" target="_blank">
+                        <i class="fa-brands fa-whatsapp color-wa"></i>
+                        <span>30585344</span>
+                    </a>
+                    <a href="#" class="contact-item" target="_blank">
+                        <i class="fa-brands fa-facebook color-fb"></i>
+                        <span>2XWIN</span>
+                    </a>
+                    <a href="#" class="contact-item" target="_blank">
+                        <i class="fa-brands fa-telegram color-tg"></i>
+                        <span>2XWIN</span>
+                    </a>
+                    <a href="#" class="contact-item" target="_blank">
+                        <i class="fa-brands fa-tiktok color-tk"></i>
+                        <span>2XWIN</span>
+                    </a>
+                    
+                    <div class="help-text-box" id="t-helpText" style="margin-bottom: 0;"></div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                if (splash) {
+                    splash.classList.add('fade-out');
+                    setTimeout(() => {
+                        splash.remove();
+                    }, 800);
+                }
+            }, 5000);
+        });
+
+        const translations = {
+            ar: {
+                subtitle: "الشحن الفوري والآمن لحسابك", platLabel: "بيانات المنصة",
+                accPlaceholder: "رقم حسابك (ID)", accError: "رقم الحساب غير صحيح", amountLabel: "تفاصيل الشحن", currOption: "العملة",
+                currMRU: "أوقية (MRU)", currUSD: "دولار (USD)", amtPlaceholder: "المبلغ", amtError: "أدخل مبلغاً صحيحاً",
+                payLabel: "طريقة الدفع", payOption: "أختر طريقة الدفع",
+                namePlaceholder: "رقم المرسل كما في التطبيق", nameError: "يرجى إدخال رقم المرسل",
+                transferText: "يرجى تحويل المبلغ لحساب شركتنا:", screenshotAlert: "التقط صورة للشاشة بعد التحويل",
+                uploadLabel: "إثبات الدفع", uploadText: "اضغط هنا لرفع صورة الإيصال", 
+                submitBtn: "تأكيد وإرسال الطلب",
+                processing: "جاري معالجة الطلب وإصدار الإيصال...", successTitle: "عملية ناجحة!", successText: "تم استلام طلبك. يرجى الاحتفاظ بهذا الإيصال.",
+                rTrans: "رقم المعاملة:", rPlat: "المنصة:", rAcc: "رقم الحساب:", rAmt: "مبلغ الشحن:", rApp: "طريقة الدفع:", rName: "رقم المرسل:", rDate: "التاريخ والوقت:",
+                newTransfer: "إجراء شحن جديد",
+                supportText: "الدعم", helpTitle: "المساعدة والدعم", helpSubtitle: "تواصل معنا لأي استفسار", 
+                helpText: "مرحباً بك في 2XWIN!<br><br>نحن هنا لمساعدتك دائماً. يمكنك التواصل معنا عبر أي من الوسائل المذكورة أعلاه لضمان تجربة استخدام سهلة وآمنة.",
+                themeTitle: "تخصيص لون التطبيق",
+                themeDefault: "أصلي",
+                themePremium: "مميز",
+                themePro: "برو",
+                pm_amanty: "أمانتي", pm_gazapay: "غزة باي", pm_bankily: "بنكيلي", pm_bimbank: "بيم بنك", 
+                pm_masrivi: "مصرفي", pm_sadad: "سداد", pm_click: "كليك", pm_moov: "موڤ موني",
+                minDepositMRU: "الحد الادنى للايداع: 30 أوقية",
+                minDepositUSD: "الحد الادنى للايداع: 1 دولار",
+                menuText: "القائمة",
+                langText: "اللغة"
+            },
+            en: {
+                subtitle: "Instant & Secure Top-up", platLabel: "Platform Details",
+                accPlaceholder: "Account ID", accError: "Invalid Account ID", amountLabel: "Top-up Details", currOption: "Currency",
+                currMRU: "Ouguiya (MRU)", currUSD: "Dollar (USD)", amtPlaceholder: "Amount", amtError: "Enter a valid amount",
+                payLabel: "Payment Method", payOption: "Select Banking App",
+                namePlaceholder: "Sender Number (as in the app)", nameError: "Please enter sender number",
+                transferText: "Transfer to our account:", screenshotAlert: "Take a screenshot after transfer",
+                uploadLabel: "Payment Proof", uploadText: "Click to upload receipt",
+                submitBtn: "Confirm & Send",
+                processing: "Processing request and issuing receipt...", successTitle: "Successful Operation!", successText: "Request received.",
+                rTrans: "Transaction ID:", rPlat: "Platform:", rAcc: "Account ID:", rAmt: "Top-up Amount:", rApp: "Payment Method:", rName: "Sender Number:", rDate: "Date:",
+                newTransfer: "New Top-up",
+                supportText: "Support", helpTitle: "Help & Support", helpSubtitle: "Contact us for any inquiry", 
+                helpText: "Welcome to 2XWIN!<br><br>We are always here to help. You can contact us via any of the methods above to ensure a smooth and secure experience.",
+                themeTitle: "App Color Theme",
+                themeDefault: "Original",
+                themePremium: "Premium",
+                themePro: "Pro",
+                pm_amanty: "Amanty", pm_gazapay: "Gaza Pay", pm_bankily: "Bankily", pm_bimbank: "BIM Bank", 
+                pm_masrivi: "Masrivi", pm_sadad: "Sadad", pm_click: "Click", pm_moov: "Moov Money",
+                minDepositMRU: "Minimum deposit: 30 MRU",
+                minDepositUSD: "Minimum deposit: 1 USD",
+                menuText: "Menu",
+                langText: "Language"
+            },
+            fr: {
+                subtitle: "Recharge Instantanée", platLabel: "Détails",
+                accPlaceholder: "ID Compte", accError: "ID invalide", amountLabel: "Montant", currOption: "Devise",
+                currMRU: "MRU", currUSD: "USD", amtPlaceholder: "Montant", amtError: "Montant invalide",
+                payLabel: "Paiement", payOption: "Choisir App",
+                namePlaceholder: "Numéro de l'expéditeur (dans l'app)", nameError: "Veuillez entrer le numéro",
+                transferText: "Transférez sur notre compte :", screenshotAlert: "Prenez une capture après le transfert",
+                uploadLabel: "Preuve", uploadText: "Cliquez pour télécharger",
+                submitBtn: "Confirmer",
+                processing: "Traitement de la demande et émission du reçu...", successTitle: "Opération Réussie !", successText: "Reçu.",
+                rTrans: "N° de Transaction :", rPlat: "Plateforme :", rAcc: "ID :", rAmt: "Montant de recharge :", rApp: "Méthode de paiement :", rName: "N° Expéditeur :", rDate: "Date :",
+                newTransfer: "Nouvelle Recharge",
+                supportText: "Support", helpTitle: "Aide et Support", helpSubtitle: "Contactez-nous pour toute question", 
+                helpText: "Bienvenue sur 2XWIN !<br><br>Nous sommes toujours là pour vous aider. Vous pouvez nous contacter via l'une des méthodes ci-dessus pour garantir une expérience fluide et sécurisée.",
+                themeTitle: "Thème de couleur",
+                themeDefault: "Original",
+                themePremium: "Premium",
+                themePro: "Pro",
+                pm_amanty: "Amanty", pm_gazapay: "Gaza Pay", pm_bankily: "Bankily", pm_bimbank: "BIM Bank", 
+                pm_masrivi: "Masrivi", pm_sadad: "Sadad", pm_click: "Click", pm_moov: "Moov Money",
+                minDepositMRU: "Dépôt minimum : 30 MRU",
+                minDepositUSD: "Dépôt minimum : 1 USD",
+                menuText: "Menu",
+                langText: "Langue"
+            }
+        };
+
+        let currentLang = 'ar';
+
+        function changeLanguage(lang, event) {
+            if (event) {
+                event.stopPropagation();
+            }
+            
+            currentLang = lang;
+            const t = translations[lang];
+            
+            document.getElementById('t-subtitle').innerText = t.subtitle;
+            document.getElementById('t-platLabel').innerText = t.platLabel;
+            
+            document.getElementById('accountId').placeholder = t.accPlaceholder;
+            document.getElementById('t-amountLabel').innerText = t.amountLabel;
+            document.getElementById('t-currOption').innerText = t.currOption;
+            document.getElementById('amount').placeholder = t.amtPlaceholder;
+            document.getElementById('t-payLabel').innerText = t.payLabel;
+            
+            if(!document.getElementById('paymentMethod').value) {
+                document.getElementById('t-payOptionContent').innerHTML = `<span class="trigger-text" id="t-payOption">${t.payOption}</span>`;
+            }
+            
+            document.getElementById('t-transferText').innerText = t.transferText;
+            document.getElementById('t-uploadLabel').innerText = t.uploadLabel;
+            document.getElementById('t-uploadText').innerText = t.uploadText;
+            document.getElementById('t-submitBtn').innerText = t.submitBtn;
+            document.getElementById('t-newTransfer').innerText = t.newTransfer;
+            document.getElementById('t-screenshotAlert').innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> ' + t.screenshotAlert;
+            
+            document.getElementById('error-accountId').innerText = t.accError;
+            document.getElementById('error-amount').innerText = t.amtError;
+            document.getElementById('error-senderName').innerText = t.nameError;
+
+            document.getElementById('t-processing').innerText = t.processing;
+            document.getElementById('t-successTitle').innerText = t.successTitle;
+            
+            document.getElementById('t-r-trans').innerText = t.rTrans;
+            document.getElementById('t-r-plat').innerText = t.rPlat;
+            document.getElementById('t-r-acc').innerText = t.rAcc;
+            document.getElementById('t-r-amt').innerText = t.rAmt;
+            document.getElementById('t-r-app').innerText = t.rApp;
+            document.getElementById('t-r-name').innerText = t.rName;
+            document.getElementById('t-r-date').innerText = t.rDate;
+
+            document.getElementById('t-currMRU').innerText = t.currMRU;
+            document.getElementById('t-currUSD').innerText = t.currUSD;
+
+            document.getElementById('t-supportText2').innerText = t.supportText;
+            document.getElementById('t-helpTitle').innerText = t.helpTitle;
+            document.getElementById('t-helpSubtitle').innerText = t.helpSubtitle;
+            document.getElementById('t-helpText').innerHTML = t.helpText;
+
+            document.getElementById('t-themeTitle').innerText = t.themeTitle;
+            document.getElementById('t-themeDefault').innerText = t.themeDefault;
+            document.getElementById('t-themePro').innerText = t.themePro;
+            document.querySelectorAll('.t-themePremium').forEach(el => el.innerText = t.themePremium);
+
+            document.getElementById('t-menuText').innerText = t.menuText;
+            document.getElementById('t-langText').innerText = t.langText;
+
+            const currVal = document.getElementById('currency').value;
+            if (currVal === 'mru') document.getElementById('t-currOption').innerText = t.currMRU;
+            if (currVal === 'usd') document.getElementById('t-currOption').innerText = t.currUSD;
+
+            const payVal = document.getElementById('paymentMethod').value;
+            if(payVal) {
+                let selectedAppText = t['pm_' + payVal];
+                document.getElementById('paymentMethodName').value = selectedAppText;
+                
+                const triggerSpan = document.getElementById('t-payOptionContent').querySelector('.trigger-text');
+                if(triggerSpan) triggerSpan.innerText = selectedAppText;
+
+                if(lang === 'ar') document.getElementById('senderName').placeholder = "رقم المرسل كما في التطبيق " + selectedAppText;
+                else if (lang === 'en') document.getElementById('senderName').placeholder = "Sender Number as in " + selectedAppText + " app";
+                else document.getElementById('senderName').placeholder = "Numéro d'expéditeur dans l'app " + selectedAppText;
+            } else {
+                document.getElementById('senderName').placeholder = t.namePlaceholder;
+            }
+
+            const minAlert = document.getElementById('min-amount-alert');
+            if (minAlert.style.display === 'flex') {
+                if (currVal === 'mru') document.getElementById('t-minAmountText').innerText = t.minDepositMRU;
+                if (currVal === 'usd') document.getElementById('t-minAmountText').innerText = t.minDepositUSD;
+            }
+
+            const htmlTag = document.getElementById('appHtml');
+            htmlTag.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+            
+            document.getElementById('langMenu').classList.remove('show');
+        }
+
+        function setupCustomSelect(wrapperId, hiddenInputId, onSelectCallback = null) {
+            const wrapper = document.getElementById(wrapperId);
+            if(!wrapper) return; 
+            const trigger = wrapper.querySelector('.custom-select-trigger');
+            const optionsContainer = wrapper.querySelector('.custom-options');
+            const options = wrapper.querySelectorAll('.custom-option');
+            const hiddenInput = document.getElementById(hiddenInputId);
+
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                
+                document.querySelectorAll('.custom-select-trigger').forEach(t => {
+                    if(t !== trigger) t.classList.remove('open');
+                });
+                document.querySelectorAll('.custom-options, .payment-grid-options').forEach(o => {
+                    if(o !== optionsContainer) o.classList.remove('open');
+                });
+
+                trigger.classList.toggle('open');
+                optionsContainer.classList.toggle('open');
+            });
+
+            options.forEach(option => {
+                option.addEventListener('click', function() {
+                    trigger.querySelector('.trigger-text').innerText = this.innerText;
+                    hiddenInput.value = this.getAttribute('data-value');
+                    optionsContainer.classList.remove('open');
+                    trigger.classList.remove('open');
+                    
+                    trigger.classList.remove('error-border');
+
+                    if(onSelectCallback) onSelectCallback(hiddenInput.value);
+                });
+            });
+        }
+
+        function selectPlatform(element) {
+            document.querySelectorAll('.platform-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            element.classList.add('selected');
+            
+            document.getElementById('platformSelector').classList.add('has-selection');
+            
+            document.getElementById('platformSelector').classList.remove('error-border');
+            
+            document.getElementById('platform').value = element.getAttribute('data-value');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            changeLanguage(currentLang);
+
+            setupCustomSelect('custom-currency', 'currency', function(val) {
+                document.getElementById('min-amount-alert').style.display = 'none';
+                document.getElementById('amount').classList.remove('error-border');
+            });
+            
+            const payWrapper = document.getElementById('custom-payment-wrapper');
+            const payTrigger = document.getElementById('trigger-payment');
+            const payOptionsContainer = document.getElementById('payment-options-container');
+            const payOptions = payOptionsContainer.querySelectorAll('.new-square-item');
+            const payHiddenInput = document.getElementById('paymentMethod');
+            const payHiddenName = document.getElementById('paymentMethodName');
+            const payTriggerContent = document.getElementById('t-payOptionContent');
+
+            payTrigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('custom-currency').querySelector('.custom-select-trigger').classList.remove('open');
+                document.getElementById('custom-currency').querySelector('.custom-options').classList.remove('open');
+                
+                payTrigger.classList.toggle('open');
+                payOptionsContainer.classList.toggle('open');
+            });
+
+            payOptions.forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    
+                    const imgSrc = this.querySelector('img').src;
+                    const val = this.getAttribute('data-value');
+                    const t = translations[currentLang];
+                    const name = t['pm_' + val]; 
+                    
+                    payTriggerContent.innerHTML = `<img src="${imgSrc}" class="trigger-img-preview"> <span class="trigger-text">${name}</span>`;
+                    
+                    payHiddenInput.value = val;
+                    payHiddenName.value = name;
+                    
+                    payOptionsContainer.classList.remove('open');
+                    payTrigger.classList.remove('open');
+                    payTrigger.classList.remove('error-border');
+
+                    document.getElementById("paymentInfoBox").classList.add("active");
+                    document.getElementById("displayNumber").innerText = "30585344";
+                    
+                    document.getElementById('senderName').value = '';
+                    document.getElementById('senderName').classList.remove('error-border');
+                    document.getElementById('error-senderName').classList.remove('show');
+
+                    if(currentLang === 'ar') document.getElementById('senderName').placeholder = "رقم المرسل كما في التطبيق " + name;
+                    else if (currentLang === 'en') document.getElementById('senderName').placeholder = "Sender Number as in " + name + " app";
+                    else document.getElementById('senderName').placeholder = "Numéro d'expéditeur dans l'app " + name;
+                    
+                });
+            });
+
+            const themeBtns = document.querySelectorAll('.theme-btn');
+            const root = document.documentElement;
+
+            const savedColor = localStorage.getItem('dl_theme_color');
+            const savedDark = localStorage.getItem('dl_theme_dark');
+            if(savedColor && savedDark) {
+                root.style.setProperty('--primary', savedColor);
+                root.style.setProperty('--primary-dark', savedDark);
+                themeBtns.forEach(btn => {
+                    if(btn.getAttribute('data-color') === savedColor) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
+
+            themeBtns.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    themeBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    const newColor = this.getAttribute('data-color');
+                    const newDark = this.getAttribute('data-dark');
+
+                    root.style.setProperty('--primary', newColor);
+                    root.style.setProperty('--primary-dark', newDark);
+
+                    localStorage.setItem('dl_theme_color', newColor);
+                    localStorage.setItem('dl_theme_dark', newDark);
+                });
+            });
+
+            document.getElementById('langWrapper').addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('langMenu').classList.toggle('show');
+            });
+
+            document.addEventListener('click', () => {
+                document.querySelectorAll('.custom-select-trigger, .custom-options, .payment-grid-options').forEach(el => {
+                    el.classList.remove('open');
+                });
+                document.getElementById('langMenu').classList.remove('show');
+            });
+
+            document.getElementById('receiptFile').addEventListener('change', function(e) {
+                if(this.files[0]) {
+                    if (!this.files[0].type.startsWith('image/')) {
+                        this.value = ''; 
+                        document.getElementById('imagePreview').src = ''; 
+                        document.getElementById('uploadBox').classList.remove('has-image'); 
+                        return; 
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        document.getElementById('imagePreview').src = event.target.result;
+                        document.getElementById('uploadBox').classList.add('has-image');
+                    }
+                    reader.readAsDataURL(this.files[0]);
+                    
+                    document.getElementById('uploadBox').style.borderColor = '';
+                    document.getElementById('uploadBox').style.backgroundColor = '';
+                }
+            });
+
+            const accountIdField = document.getElementById('accountId');
+            const amountField = document.getElementById('amount');
+            const senderNameField = document.getElementById('senderName');
+
+            accountIdField.addEventListener('input', function(e) {
+                this.value = this.value.replace(/\D/g, '');
+                if (this.value.length > 10) {
+                    this.value = this.value.slice(0, 10);
+                }
+                this.classList.remove('error-border');
+                document.getElementById('error-accountId').classList.remove('show');
+            });
+
+            amountField.addEventListener('input', function(e) {
+                let originalValue = this.value;
+                this.value = this.value.replace(/\D/g, '');
+                this.value = this.value.replace(/^0+/, ''); 
+                
+                this.classList.remove('error-border');
+                document.getElementById('error-amount').classList.remove('show');
+                document.getElementById('min-amount-alert').style.display = 'none';
+
+                const currVal = document.getElementById('currency').value;
+                
+                if (currVal === 'usd') {
+                    if (originalValue.startsWith('0') && this.value === '') {
+                        const tLang = translations[currentLang];
+                        this.classList.add('error-border');
+                        document.getElementById('t-minAmountText').innerText = tLang.minDepositUSD;
+                        document.getElementById('min-amount-alert').style.display = 'flex';
+                    }
+                }
+            });
+
+            senderNameField.addEventListener('input', function() {
+                let val = this.value.replace(/\D/g, '');
+                const selectedPayment = document.getElementById('paymentMethod').value;
+
+                if (val.length > 0) {
+                    if (selectedPayment === 'moov') {
+                        if (!/^[4]/.test(val)) {
+                            val = val.substring(1);
+                        }
+                    } else {
+                        if (!/^[234]/.test(val)) {
+                            val = val.substring(1);
+                        }
+                    }
+                }
+
+                if (val.length > 8) {
+                    val = val.substring(0, 8);
+                }
+                this.value = val;
+                this.classList.remove('error-border');
+                document.getElementById('error-senderName').classList.remove('show');
+            });
+
+            const openHelpWrapper = document.getElementById('openHelpWrapper');
+            const closeHelpBtn = document.getElementById('closeHelpBtn');
+            const helpModal = document.getElementById('helpModal');
+            
+            const supportActionBtn = document.getElementById('supportActionBtn');
+            const supportPanel = document.getElementById('supportPanel');
+            
+            const faqGroupContainer = document.getElementById('faqGroupContainer');
+
+            openHelpWrapper.addEventListener('click', () => {
+                helpModal.classList.add('show');
+                supportPanel.classList.remove('show'); 
+                faqGroupContainer.style.display = 'flex'; 
+                document.getElementById('themePickerContainer').style.display = 'flex';
+            });
+
+            closeHelpBtn.addEventListener('click', () => {
+                helpModal.classList.remove('show');
+            });
+
+            supportActionBtn.addEventListener('click', () => {
+                supportPanel.classList.toggle('show');
+                if(supportPanel.classList.contains('show')){
+                    faqGroupContainer.style.display = 'none';
+                } else {
+                    faqGroupContainer.style.display = 'flex';
+                }
+            });
+
+            document.getElementById('premiumForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                let isValid = true;
+
+                document.querySelectorAll('.error-border').forEach(el => el.classList.remove('error-border'));
+                document.querySelectorAll('.error-message.show').forEach(el => el.classList.remove('show'));
+                document.getElementById('uploadBox').style.borderColor = '';
+                document.getElementById('uploadBox').style.backgroundColor = '';
+                document.getElementById('min-amount-alert').style.display = 'none';
+
+                if (!document.getElementById('platform').value) {
+                    document.getElementById('platformSelector').classList.add('error-border');
+                    isValid = false;
+                }
+
+                const accVal = document.getElementById('accountId').value.trim();
+                if (!accVal || accVal.length !== 10) {
+                    document.getElementById('accountId').classList.add('error-border');
+                    document.getElementById('error-accountId').classList.add('show');
+                    isValid = false;
+                }
+
+                if (!document.getElementById('currency').value) {
+                    document.getElementById('trigger-currency').classList.add('error-border');
+                    isValid = false;
+                }
+
+                const currVal = document.getElementById('currency').value;
+                const amountValStr = document.getElementById('amount').value.trim();
+                const amountNum = parseInt(amountValStr);
+                const tLang = translations[currentLang];
+                const minAlert = document.getElementById('min-amount-alert');
+                const minAlertText = document.getElementById('t-minAmountText');
+
+                if (!amountValStr) {
+                    document.getElementById('amount').classList.add('error-border');
+                    document.getElementById('error-amount').classList.add('show');
+                    isValid = false;
+                } else if (currVal === 'mru' && amountNum < 30) {
+                    document.getElementById('amount').classList.add('error-border');
+                    minAlertText.innerText = tLang.minDepositMRU;
+                    minAlert.style.display = 'flex';
+                    isValid = false;
+                } else if (currVal === 'usd' && amountNum < 1) {
+                    document.getElementById('amount').classList.add('error-border');
+                    minAlertText.innerText = tLang.minDepositUSD;
+                    minAlert.style.display = 'flex';
+                    isValid = false;
+                }
+
+                if (!document.getElementById('paymentMethod').value) {
+                    document.getElementById('trigger-payment').classList.add('error-border');
+                    isValid = false;
+                }
+
+                const senderNumVal = document.getElementById('senderName').value.trim();
+                const selectedPayment = document.getElementById('paymentMethod').value;
+                let isSenderValid = false;
+
+                if (senderNumVal && senderNumVal.length === 8) {
+                    if (selectedPayment === 'moov' && /^[4]/.test(senderNumVal)) {
+                        isSenderValid = true;
+                    } else if (selectedPayment !== 'moov' && /^[234]/.test(senderNumVal)) {
+                        isSenderValid = true;
+                    }
+                }
+
+                if (!isSenderValid) {
+                    document.getElementById('senderName').classList.add('error-border');
+                    document.getElementById('error-senderName').classList.add('show');
+                    isValid = false;
+                }
+
+                if (document.getElementById('receiptFile').files.length === 0) {
+                    document.getElementById('uploadBox').style.borderColor = 'var(--error)';
+                    document.getElementById('uploadBox').style.backgroundColor = 'rgba(255, 59, 48, 0.05)';
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    return; 
+                }
+
+                document.getElementById("successModal").classList.add("show");
+                
+                let random10Digits = Math.floor(1000000000 + Math.random() * 9000000000);
+                let transId = "DL" + random10Digits;
+                
+                let localizedDateTime = new Date().toLocaleString('fr-FR');
+
+                let currencyCode = document.getElementById("currency").value.toUpperCase();
+
+                let platformText = document.getElementById("platform").value; 
+                document.getElementById("r-platVal").innerText = platformText;
+                
+                document.getElementById("r-accVal").innerText = document.getElementById("accountId").value;
+
+                document.getElementById("r-transVal").innerText = transId;
+
+                document.getElementById("r-amtVal").innerText = document.getElementById("amount").value + " " + currencyCode;
+                
+                let appName = document.getElementById("paymentMethodName").value;
+                document.getElementById("r-appVal").innerText = appName;
+
+                document.getElementById("r-nameVal").innerText = document.getElementById("senderName").value;
+                
+                document.getElementById("r-dateVal").innerText = localizedDateTime; 
+
+                setTimeout(() => {
+                    document.getElementById("loadingState").style.display = "none";
+                    document.getElementById("receiptState").style.display = "flex";
+                }, 2000); 
+            });
+
+            document.getElementById('resetBtn').addEventListener('click', () => {
+                document.getElementById("successModal").classList.remove("show");
+                
+                document.getElementById("loadingState").style.display = "flex";
+                document.getElementById("receiptState").style.display = "none";
+
+                document.getElementById('premiumForm').reset();
+
+                document.getElementById('platform').value = "";
+                document.querySelectorAll('.platform-btn').forEach(btn => btn.classList.remove('selected'));
+                document.getElementById('platformSelector').classList.remove('has-selection');
+                document.getElementById('platformSelector').classList.remove('error-border');
+
+                document.getElementById('currency').value = "";
+                document.getElementById('paymentMethod').value = "";
+                document.getElementById('paymentMethodName').value = "";
+
+                const t = translations[currentLang];
+                document.getElementById('trigger-currency').querySelector('.trigger-text').innerText = t.currOption;
+                
+                document.getElementById('t-payOptionContent').innerHTML = `<span class="trigger-text" id="t-payOption">${t.payOption}</span>`;
+                
+                document.getElementById('senderName').placeholder = t.namePlaceholder;
+
+                document.getElementById("paymentInfoBox").classList.remove("active");
+                document.getElementById('min-amount-alert').style.display = 'none';
+
+                document.getElementById('imagePreview').src = "";
+                document.getElementById('uploadBox').classList.remove('has-image');
+            });
+            
+            document.getElementById('copyBtn').addEventListener('click', function(e) {
+                e.preventDefault(); 
+                const textToCopy = document.getElementById("displayNumber").innerText;
+                
+                let tempInput = document.createElement("input");
+                tempInput.value = textToCopy;
+                tempInput.style.position = "absolute";
+                tempInput.style.left = "-9999px";
+                tempInput.setAttribute("readonly", ""); 
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                tempInput.setSelectionRange(0, 99999);
+                try { document.execCommand('copy'); } catch (err) {}
+                document.body.removeChild(tempInput);
+                
+                const originalHTML = this.innerHTML;
+                this.innerHTML = '<i class="fa-solid fa-check"></i>';
+                setTimeout(() => this.innerHTML = originalHTML, 2000);
+            });
+        });
+    </script>
+    
+    <!-- كود تفعيل الـ Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        console.log('تم تسجيل Service Worker بنجاح:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('فشل تسجيل Service Worker:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
